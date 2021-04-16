@@ -177,12 +177,21 @@ def model_fn(source_vocab_size, target_vocab_size, sequence_length):
 def model_bidirectional(source_vocab_size, target_vocab_size, sequence_length):
   #input
   input = tf.keras.Input(shape=(sequence_length))
-  
-  ##BidrectionalRNNS
-  biRNN = tf.keras.layers.Bidirectional(256,return_sequences = True, name = 'BiRNN_1',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True)(input)
-  biRNN = tf.keras.layers.Bidirectional(256,return_sequences = True, name = 'BiRNN_1',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True)(biRNN)
+  # embedding layer
+  embedding = tf.keras.layers.Embedding(source_vocab_size, 300) # vocabs = 10000, embed_dim = 64, sequence_length = 10
+  embedding = embedding(input)
+  ##Bidrectional Lstm Encoder
+  biRNN = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(256, return_sequences = True, name = 'Encoder_1',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True))(embedding)
+  biRNN = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(512, return_sequences = True, name = 'Encoder_2',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True))(biRNN)
+   
+   #LSTM decoder
+  biRNN = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128, return_sequences = True, name = 'Encoder_2',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True))(biRNN)
+
   #output
-model = model_fn(len(source_vocabs), len(target_vocabs), sequence_length = 50)
+  output = tf.keras.layers.Dense(target_vocab_size)(biRNN)
+
+  return tf.keras.Model(inputs = [input], outputs = [output])
+model = model_bidirectional(len(source_vocabs), len(target_vocabs), sequence_length = 50)
 print(model.summary())
 
 """Naming the Model"""
@@ -229,8 +238,8 @@ metrics = [] # BLEU
 model.compile(optimizer = optimizer, loss = loss, metrics = metrics)
 """Nameing the tensorboad
 """
-type_of_model = "seq_seq"
-loss_function = "Sparse_Categorigical_Crossentropy"
+type_of_model = Constant.BIRNN_NAME
+loss_function = Constant.SCC
 NAME = name_model(Constant.EPOCHS,type_of_model,learning_rate,loss_function)
 NAME = NAME+' '+format(datetime.datetime.now())
 NAME = NAME.replace(":","_")
