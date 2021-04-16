@@ -214,18 +214,6 @@ class EarlyStoppingAtMinLoss(keras.callbacks.Callback):
           print("stop")
           self.model.stop_training=True
           self.stopped_epoch=epoch
-        '''if np.less(current, self.best):
-            self.best = current
-            self.wait = 0
-            # Record the best weights if current results is better (less).
-            self.best_weights = self.model.get_weights()
-        else:
-            self.wait += 1
-            if self.wait >= self.patience:
-                self.stopped_epoch = epoch
-                self.model.stop_training = True
-                print("Restoring model weights from the end of the best epoch.")
-                self.model.set_weights(self.best_weights)'''
 
     def on_train_end(self, logs=None):
         if self.stopped_epoch > 0:
