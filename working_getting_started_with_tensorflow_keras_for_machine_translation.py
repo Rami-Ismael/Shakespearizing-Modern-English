@@ -214,6 +214,7 @@ class EarlyStoppingAtMinLoss(keras.callbacks.Callback):
         self.patience = patience
         # best_weights to store the weights at which the minimum loss occurs.
         self.best_weights = None
+        self.stopped_epoch=0
 
 
     def on_epoch_end(self, epoch, logs=None):
