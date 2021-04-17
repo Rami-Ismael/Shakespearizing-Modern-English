@@ -191,7 +191,7 @@ def model_bidirectional(source_vocab_size, target_vocab_size, sequence_length):
   output = tf.keras.layers.Dense(target_vocab_size)(biRNN)
 
   return tf.keras.Model(inputs = [input], outputs = [output])
-model = model_bidirectional(len(source_vocabs), len(target_vocabs), sequence_length = 50)
+model = model_fn(len(source_vocabs), len(target_vocabs), sequence_length = 50)
 print(model.summary())
 
 """Naming the Model"""
@@ -233,13 +233,20 @@ class EarlyStoppingAtMinLoss(keras.callbacks.Callback):
 """# Hyperparameters"""
 
 learning_rate = Constant.LEARNING_RATE # 0.0001, 0.00xxx1
-optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+##Learning rate scheule 
+lr_schedule = tf.keras.optimizers.schedules.InverseTimeDecay(
+  Constant.LEARNING_RATE,
+  decay_steps=Constant.BATCH_SIZE*1000,
+  decay_rate=1,
+  staircase=False)
+
+optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
 loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True)
 metrics = [] # BLEU
 model.compile(optimizer = optimizer, loss = loss, metrics = metrics)
 """Nameing the tensorboad
 """
-type_of_model = Constant.BIRNN_NAME
+type_of_model = "Seq-Seq-LSTM"
 loss_function = Constant.SCC
 NAME = name_model(Constant.EPOCHS,type_of_model,learning_rate,loss_function)
 NAME = NAME+' '+format(datetime.datetime.now())
