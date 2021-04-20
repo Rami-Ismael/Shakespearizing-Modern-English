@@ -22,6 +22,7 @@ import manipulateFolder
 import zipfile
 from tensorflow import keras
 from tensorflow.keras.callbacks import Callback, History, CSVLogger
+import numpy as np
 NAME =""
 
 """# Data"""
@@ -173,7 +174,14 @@ def model_fn(source_vocab_size, target_vocab_size, sequence_length):
   output = tf.keras.layers.Dense(target_vocab_size)(lstm)
 
   return tf.keras.Model(inputs = [input], outputs = [output])
-
+def model_bidirectional(source_vocab_size, target_vocab_size, sequence_length):
+  #input
+  input = tf.keras.Input(shape=(sequence_length))
+  
+  ##BidrectionalRNNS
+  biRNN = tf.keras.layers.Bidirectional(256,return_sequences = True, name = 'BiRNN_1',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True)(input)
+  biRNN = tf.keras.layers.Bidirectional(256,return_sequences = True, name = 'BiRNN_1',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True)(biRNN)
+  #output
 model = model_fn(len(source_vocabs), len(target_vocabs), sequence_length = 50)
 print(model.summary())
 
@@ -183,6 +191,47 @@ print(model.summary())
 def name_model(epochs,type_of_model,learning_rate,loss_function):
     return f' model is {type_of_model} the epochs {epochs}  learning_rate {learning_rate} ' \
            f'lost function is {loss_function}'
+#Early stop in keras
+class EarlyStoppingAtMinLoss(keras.callbacks.Callback):
+    """Stop training when the loss is at its min, i.e. the loss stops decreasing.
+
+  Arguments:
+      patience: Number of epochs to wait after min has been hit. After this
+      number of no improvement, training stops.
+  """
+
+    def __init__(self, patience=0):
+        super(EarlyStoppingAtMinLoss, self).__init__()
+        self.patience = patience
+        # best_weights to store the weights at which the minimum loss occurs.
+        self.best_weights = None
+
+
+    def on_epoch_end(self, epoch, logs=None):
+        current_loss = logs.get("loss")
+        current_validation_lost = logs.get("val_loss")
+        if(current_loss<current_validation_lost):
+          print("stop")
+          self.model.stop_training=True
+          self.stopped_epoch=epoch
+        '''if np.less(current, self.best):
+            self.best = current
+            self.wait = 0
+            # Record the best weights if current results is better (less).
+            self.best_weights = self.model.get_weights()
+        else:
+            self.wait += 1
+            if self.wait >= self.patience:
+                self.stopped_epoch = epoch
+                self.model.stop_training = True
+                print("Restoring model weights from the end of the best epoch.")
+                self.model.set_weights(self.best_weights)'''
+
+    def on_train_end(self, logs=None):
+        if self.stopped_epoch > 0:
+            print("Epoch %05d: early stopping" % (self.stopped_epoch + 1))
+
+
 """# Hyperparameters"""
 
 learning_rate = Constant.LEARNING_RATE # 0.0001, 0.00xxx1
@@ -206,7 +255,7 @@ logs = Callback()
 csv_logger = CSVLogger(csv_Name)
 tensorboard  = TensorBoard(log_dir="logs/{}".format(NAME))
 epochs = Constant.EPOCHS
-model.fit(train_dataset, validation_data = val_dataset, epochs = epochs, verbose = 1, callbacks=[history,csv_logger,tensorboard])
+model.fit(train_dataset, validation_data = val_dataset, epochs = epochs, verbose = 1, callbacks=[history,csv_logger,tensorboard,EarlyStoppingAtMinLoss()])
 
 
 """## Save model"""
@@ -228,4 +277,5 @@ manipulateFolder.moveFileIntoDir(csv_Name,"csv")
 '''model = tf.keras.load_model(path)
 model.predict(input)'''
 print(name_of_model)
+print("The model lost "+str(model_loss)+ "The validation lost "+str(model_validation_loss))
 
