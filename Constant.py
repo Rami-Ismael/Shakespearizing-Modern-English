@@ -1,8 +1,10 @@
-BATCH_SIZE = 512
+BATCH_SIZE = 32
 MAX_LENGTH=50
 SEQUENCE_LENGTH=50
 LEARNING_RATE = 0.01
-EPOCHS = 50
+EPOCHS = 100
+BIRNN_NAME= "Bi_RNN"
+SCC = "Sprase_Categorigical_Crossentropy"
 PATH_TRAIN_MODERN = 'data/train.modern.nltktok'
 PATH_VALIDATION_MODERN = 'data/valid.modern.nltktok'
 PATH_VALIDATION_ORIGINAL = 'data/valid.modern.nltktok'

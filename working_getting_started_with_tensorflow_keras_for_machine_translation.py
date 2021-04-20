@@ -177,11 +177,20 @@ def model_fn(source_vocab_size, target_vocab_size, sequence_length):
 def model_bidirectional(source_vocab_size, target_vocab_size, sequence_length):
   #input
   input = tf.keras.Input(shape=(sequence_length))
-  
-  ##BidrectionalRNNS
-  biRNN = tf.keras.layers.Bidirectional(256,return_sequences = True, name = 'BiRNN_1',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True)(input)
-  biRNN = tf.keras.layers.Bidirectional(256,return_sequences = True, name = 'BiRNN_1',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True)(biRNN)
+  # embedding layer
+  embedding = tf.keras.layers.Embedding(source_vocab_size, 300) # vocabs = 10000, embed_dim = 64, sequence_length = 10
+  embedding = embedding(input)
+  ##Bidrectional Lstm Encoder
+  biRNN = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(256, return_sequences = True, name = 'Encoder_1',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True))(embedding)
+  biRNN = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(512, return_sequences = True, name = 'Encoder_2',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True))(biRNN)
+   
+   #LSTM decoder
+  biRNN = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128, return_sequences = True, name = 'Encoder_2',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True))(biRNN)
+
   #output
+  output = tf.keras.layers.Dense(target_vocab_size)(biRNN)
+
+  return tf.keras.Model(inputs = [input], outputs = [output])
 model = model_fn(len(source_vocabs), len(target_vocabs), sequence_length = 50)
 print(model.summary())
 
@@ -205,6 +214,7 @@ class EarlyStoppingAtMinLoss(keras.callbacks.Callback):
         self.patience = patience
         # best_weights to store the weights at which the minimum loss occurs.
         self.best_weights = None
+        self.stopped_epoch=0
 
 
     def on_epoch_end(self, epoch, logs=None):
@@ -214,18 +224,6 @@ class EarlyStoppingAtMinLoss(keras.callbacks.Callback):
           print("stop")
           self.model.stop_training=True
           self.stopped_epoch=epoch
-        '''if np.less(current, self.best):
-            self.best = current
-            self.wait = 0
-            # Record the best weights if current results is better (less).
-            self.best_weights = self.model.get_weights()
-        else:
-            self.wait += 1
-            if self.wait >= self.patience:
-                self.stopped_epoch = epoch
-                self.model.stop_training = True
-                print("Restoring model weights from the end of the best epoch.")
-                self.model.set_weights(self.best_weights)'''
 
     def on_train_end(self, logs=None):
         if self.stopped_epoch > 0:
@@ -235,14 +233,21 @@ class EarlyStoppingAtMinLoss(keras.callbacks.Callback):
 """# Hyperparameters"""
 
 learning_rate = Constant.LEARNING_RATE # 0.0001, 0.00xxx1
-optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+##Learning rate scheule 
+lr_schedule = tf.keras.optimizers.schedules.InverseTimeDecay(
+  Constant.LEARNING_RATE,
+  decay_steps=Constant.BATCH_SIZE*1000,
+  decay_rate=1,
+  staircase=False)
+
+optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
 loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True)
 metrics = [] # BLEU
 model.compile(optimizer = optimizer, loss = loss, metrics = metrics)
 """Nameing the tensorboad
 """
-type_of_model = "seq_seq"
-loss_function = "Sparse_Categorigical_Crossentropy"
+type_of_model = "Seq-Seq-LSTM"
+loss_function = Constant.SCC
 NAME = name_model(Constant.EPOCHS,type_of_model,learning_rate,loss_function)
 NAME = NAME+' '+format(datetime.datetime.now())
 NAME = NAME.replace(":","_")
