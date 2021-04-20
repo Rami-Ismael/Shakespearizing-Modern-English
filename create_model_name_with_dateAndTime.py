@@ -18,10 +18,6 @@ import datetime
 from tensorflow.keras.callbacks import TensorBoard
 import time
 import Constant
-import manipulateFolder 
-import zipfile
-from tensorflow import keras
-from tensorflow.keras.callbacks import Callback, History, CSVLogger
 NAME =""
 
 """# Data"""
@@ -151,6 +147,10 @@ val_original = 'data/valid.original.nltktok'
 
 val_dataset = load_data(val_modern, val_original, source_vocabs, target_vocabs)
 
+for sample in val_dataset:
+  print('modern', sample[0])
+  print('original', sample[1].shape)
+  break
 
 """# Model and Tensorboard"""
 
@@ -195,15 +195,15 @@ model.compile(optimizer = optimizer, loss = loss, metrics = metrics)
 type_of_model = "seq_seq"
 loss_function = "Sparse_Categorigical_Crossentropy"
 NAME = name_model(Constant.EPOCHS,type_of_model,learning_rate,loss_function)
-NAME = NAME+' '+format(datetime.datetime.now())
-NAME = NAME.replace(":","_")
-csv_Name = NAME+".log"
+NAME = NAME.format(datetime.datetime.now())
 """# Tranining
 
 """
+from tensorflow import keras
+from tensorflow.keras.callbacks import Callback, History, CSVLogger
 history = History()
 logs = Callback()
-csv_logger = CSVLogger(csv_Name)
+csv_logger = CSVLogger('training.log')
 tensorboard  = TensorBoard(log_dir="logs/{}".format(NAME))
 epochs = Constant.EPOCHS
 model.fit(train_dataset, validation_data = val_dataset, epochs = epochs, verbose = 1, callbacks=[history,csv_logger,tensorboard])
@@ -217,15 +217,32 @@ model_loss_formated = format(model_loss,".5f")
 model_validation_loss = history.history['val_loss'][size-1]
 model_validation_loss_formated = format(model_validation_loss,".5")
 name_of_model = NAME
+name_of_model_zip = name_of_model+".zip"
 location_of_folder = "/model/"
 model.save(location_of_folder+name_of_model)
+## move the training log csv into the model save directory
 
-#move the csv file to the
+import os
+import zipfile
+from tensorflow.python.keras.callbacks import CSVLogger
+def zipdir(path, ziph):
+    # ziph is zipfile handle
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            ziph.write(os.path.join(root, file))
+zipf = zipfile.ZipFile(name_of_model_zip, 'w', zipfile.ZIP_DEFLATED)
+zipdir("/content/"+name_of_model, zipf)
+zipf.close()
 
-manipulateFolder.moveFileIntoDir(csv_Name,"csv")
 
 
 '''model = tf.keras.load_model(path)
 model.predict(input)'''
-print(name_of_model)
 
+"""# History"""
+print(history)
+print(type(history))
+dir(history.history.keys())
+print(history.history.keys())
+print(history.history['loss'])
+print(history.history['loss'][size-1])
