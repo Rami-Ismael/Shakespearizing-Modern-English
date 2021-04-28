@@ -23,7 +23,10 @@ import zipfile
 from tensorflow import keras
 from tensorflow.keras.callbacks import Callback, History, CSVLogger
 import numpy as np
+import kerasEarlyStop
+import DeepLearningModel
 NAME =""
+type_of_model=""
 
 """# Data"""
 
@@ -154,80 +157,18 @@ val_dataset = load_data(val_modern, val_original, source_vocabs, target_vocabs)
 
 
 """# Model and Tensorboard"""
-
-def model_fn(source_vocab_size, target_vocab_size, sequence_length):
-  # input
-  input = tf.keras.Input(shape = (sequence_length))
-
-  # embedding layer
-  embedding = tf.keras.layers.Embedding(source_vocab_size, 300) # vocabs = 10000, embed_dim = 64, sequence_length = 10
-  embedding = embedding(input)
-
-  # LSTM encoder
-  lstm = tf.keras.layers.LSTM(256, return_sequences = True, name = 'Encoder_1',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True)(embedding)
-  lstm = tf.keras.layers.LSTM(512, return_sequences = True, name = 'Encoder_2',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True)(lstm)
-
-  # LSTM decoder
-  lstm = tf.keras.layers.LSTM(128, return_sequences = True, name = 'Decoder',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True)(lstm)
-
-  # output
-  output = tf.keras.layers.Dense(target_vocab_size)(lstm)
-
-  return tf.keras.Model(inputs = [input], outputs = [output])
-def model_bidirectional(source_vocab_size, target_vocab_size, sequence_length):
-  #input
-  input = tf.keras.Input(shape=(sequence_length))
-  # embedding layer
-  embedding = tf.keras.layers.Embedding(source_vocab_size, 300) # vocabs = 10000, embed_dim = 64, sequence_length = 10
-  embedding = embedding(input)
-  ##Bidrectional Lstm Encoder
-  biRNN = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(256, return_sequences = True, name = 'Encoder_1',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True))(embedding)
-  biRNN = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(512, return_sequences = True, name = 'Encoder_2',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True))(biRNN)
-   
-   #LSTM decoder
-  biRNN = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128, return_sequences = True, name = 'Encoder_2',activation="tanh", recurrent_activation="sigmoid", recurrent_dropout=0.0,unroll=False,use_bias=True))(biRNN)
-
-  #output
-  output = tf.keras.layers.Dense(target_vocab_size)(biRNN)
-
-  return tf.keras.Model(inputs = [input], outputs = [output])
-model = model_fn(len(source_vocabs), len(target_vocabs), sequence_length = 50)
+#create a deep learning model 
+DeepModel = DeepLearningModel.Forward_LSTM(len(source_vocabs),len(target_vocabs),sequence_length=Constant.SEQUENCE_LENGTH)
+model = DeepModel[0]
+type_of_model = DeepModel[1]
 print(model.summary())
 
 """Naming the Model"""
 
 
-def name_model(epochs,type_of_model,learning_rate,loss_function):
-    return f' model is {type_of_model} the epochs {epochs}  learning_rate {learning_rate} ' \
-           f'lost function is {loss_function}'
+def name_model(epochs,type_of_model,learning_rate,loss_function,details):
+    return f'{type_of_model}_E_{epochs}_LR{learning_rate}_LF{loss_function}_BACH_S{Constant.BATCH_SIZE}_SEQL{Constant.SEQUENCE_LENGTH} '+details
 #Early stop in keras
-class EarlyStoppingAtMinLoss(keras.callbacks.Callback):
-    """Stop training when the loss is at its min, i.e. the loss stops decreasing.
-
-  Arguments:
-      patience: Number of epochs to wait after min has been hit. After this
-      number of no improvement, training stops.
-  """
-
-    def __init__(self, patience=0):
-        super(EarlyStoppingAtMinLoss, self).__init__()
-        self.patience = patience
-        # best_weights to store the weights at which the minimum loss occurs.
-        self.best_weights = None
-        self.stopped_epoch=0
-
-
-    def on_epoch_end(self, epoch, logs=None):
-        current_loss = logs.get("loss")
-        current_validation_lost = logs.get("val_loss")
-        if(current_loss<current_validation_lost):
-          print("stop")
-          self.model.stop_training=True
-          self.stopped_epoch=epoch
-
-    def on_train_end(self, logs=None):
-        if self.stopped_epoch > 0:
-            print("Epoch %05d: early stopping" % (self.stopped_epoch + 1))
 
 
 """# Hyperparameters"""
@@ -237,7 +178,7 @@ learning_rate = Constant.LEARNING_RATE # 0.0001, 0.00xxx1
 lr_schedule = tf.keras.optimizers.schedules.InverseTimeDecay(
   Constant.LEARNING_RATE,
   decay_steps=Constant.BATCH_SIZE*1000,
-  decay_rate=1,
+  decay_rate=Constant.DECAY_RATE,
   staircase=False)
 
 optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
@@ -246,9 +187,9 @@ metrics = [] # BLEU
 model.compile(optimizer = optimizer, loss = loss, metrics = metrics)
 """Nameing the tensorboad
 """
-type_of_model = "Seq-Seq-LSTM"
+print(type_of_model)
 loss_function = Constant.SCC
-NAME = name_model(Constant.EPOCHS,type_of_model,learning_rate,loss_function)
+NAME = name_model(Constant.EPOCHS,type_of_model,learning_rate,loss_function,"")
 NAME = NAME+' '+format(datetime.datetime.now())
 NAME = NAME.replace(":","_")
 csv_Name = NAME+".log"
@@ -260,7 +201,7 @@ logs = Callback()
 csv_logger = CSVLogger(csv_Name)
 tensorboard  = TensorBoard(log_dir="logs/{}".format(NAME))
 epochs = Constant.EPOCHS
-model.fit(train_dataset, validation_data = val_dataset, epochs = epochs, verbose = 1, callbacks=[history,csv_logger,tensorboard,EarlyStoppingAtMinLoss()])
+model.fit(train_dataset, validation_data = val_dataset, epochs = epochs, verbose = 1, callbacks=[history,csv_logger,tensorboard,kerasEarlyStop.EarlyStoppingAtMinLossWithPatience()])
 
 
 """## Save model"""
@@ -282,5 +223,7 @@ manipulateFolder.moveFileIntoDir(csv_Name,"csv")
 '''model = tf.keras.load_model(path)
 model.predict(input)'''
 print(name_of_model)
+print(csv_Name)
+print(type_of_model)
 print("The model lost "+str(model_loss)+ "The validation lost "+str(model_validation_loss))
 

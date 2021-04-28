@@ -1,9 +1,12 @@
-BATCH_SIZE = 32
+BATCH_SIZE = 512
 MAX_LENGTH=50
+GIT_SIZE_LIMIT =10000000
 SEQUENCE_LENGTH=50
 LEARNING_RATE = 0.01
 EPOCHS = 100
-BIRNN_NAME= "Bi_RNN"
+DECAY_RATE= 0.5
+BILSTM_NAME= "Bi_LSTM"
+LSTM_NAME = "Seq-Seq-LSTM"
 SCC = "Sprase_Categorigical_Crossentropy"
 PATH_TRAIN_MODERN = 'data/train.modern.nltktok'
 PATH_VALIDATION_MODERN = 'data/valid.modern.nltktok'

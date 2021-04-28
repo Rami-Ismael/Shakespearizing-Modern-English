@@ -16,14 +16,19 @@ for x in list_untracked_files:
 limit  = Constant.GIT_SIZE_LIMIT
 size = 0
 upload_size =0
+print("Upload the code")
 for x in list_untracked_files:
     size = os.path.getsize(x)
+    print(size)
     if(upload_size+size>=Constant.GIT_SIZE_LIMIT):
         os.system("ls")
-        os.system("git commit -m \"Please upload the size \"")
+        os.system("git commit -m \" Upload huge files  \"")
+        os.system("git push origin master")
         print(upload_size)
         break
     else :
         upload_size = upload_size+size
         print(str(upload_size)+" "+str(Constant.GIT_SIZE_LIMIT))
         repo.git.add(x)
+os.system("git commit -m \" Upload huge files  \"")
+os.system("git push origin master")
