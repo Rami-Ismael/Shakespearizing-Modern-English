@@ -65,3 +65,6 @@ If you use this code or the processed data, please consider citing our work:
 ```
 
 Additionally, if you use the data, please consder citing "Wei Xu, Alan Ritter, William B Dolan, Ralph Grish- man, and Colin Cherry. 2012. Paraphrasing for style. In 24th International Conference on Computational Linguistics, COLING 2012."
+
+##Describe the Mental Process of doing this Project
+https://www.notion.so/AI-Project-f703d5d691c9426b807451e856715b11
