@@ -159,7 +159,7 @@ val_dataset = load_data(val_modern, val_original, source_vocabs, target_vocabs)
 
 """# Model and Tensorboard"""
 #create a deep learning model 
-DeepModel = DeepLearningModel.Forward_LSTM(len(source_vocabs),len(target_vocabs),sequence_length=Constant.SEQUENCE_LENGTH)
+DeepModel = DeepLearningModel.Forward_GRU(len(source_vocabs),len(target_vocabs),sequence_length=Constant.SEQUENCE_LENGTH)
 model = DeepModel[0]
 type_of_model = DeepModel[1]
 print(model.summary())

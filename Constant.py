@@ -7,6 +7,7 @@ EPOCHS = 100
 DECAY_RATE= 0.5
 BILSTM_NAME= "Bi_LSTM"
 LSTM_NAME = "Seq-Seq-LSTM"
+GRU_NAME = "Seq-Seq-GRU" 
 SCC = "Sprase_Categorigical_Crossentropy"
 PATH_TRAIN_MODERN = 'data/train.modern.nltktok'
 PATH_VALIDATION_MODERN = 'data/valid.modern.nltktok'

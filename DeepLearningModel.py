@@ -42,7 +42,7 @@ def Forward_LSTM(source_vocab_size, target_vocab_size, sequence_length):
 
   return tf.keras.Model(inputs = [input], outputs = [output]),type_of_model
 def Forward_GRU(source_vocab_size,target_vocab_size,sequence_length):
-  type_of_model = Constant.LSTM_NAME
+  type_of_model = Constant.GRU_NAME
   # input
   input = tf.keras.Input(shape = (sequence_length))
 
@@ -59,3 +59,6 @@ def Forward_GRU(source_vocab_size,target_vocab_size,sequence_length):
 
   # output
   output = tf.keras.layers.Dense(target_vocab_size,activity_regularizer=l1(0.001))(lstm)
+
+  #return 
+  return tf.keras.Model(inputs = [input], outputs = [output]),type_of_model
